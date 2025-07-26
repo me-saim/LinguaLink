@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinguaLink - Multilingual Messaging</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .chat-bubble {
+            animation: slideUp 0.3s ease-out;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .online-indicator {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .notification-badge {
+            animation: bounce 1s infinite;
+        }
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen">
+    
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="fixed inset-0 gradient-bg flex items-center justify-center z-50">
+        <div class="text-center">
+            <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-white mb-4 mx-auto"></div>
+            <h2 class="text-white text-2xl font-bold">LinguaLink</h2>
+            <p class="text-purple-200">Connecting Languages, Connecting Hearts</p>
+        </div>
+    </div>
+
+    <!-- Authentication Screen -->
+    <div id="authScreen" class="hidden fixed inset-0 gradient-bg flex items-center justify-center">
+        <div class="glass-effect rounded-3xl p-8 w-full max-w-md mx-4">
+            <div class="text-center mb-8">
+                <h1 class="text-4xl font-bold text-white mb-2">LinguaLink</h1>
+                <p class="text-purple-200">Connect across languages</p>
+            </div>
+            
+            <!-- Login Form -->
+            <div id="loginForm" class="space-y-6">
+                <div>
+                    <input type="email" id="loginEmail" placeholder="Email" 
+                           class="w-full px-4 py-3 rounded-lg glass-effect text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-400">
+                </div>
+                <div>
+                    <input type="password" id="loginPassword" placeholder="Password" 
+                           class="w-full px-4 py-3 rounded-lg glass-effect text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-400">
+                </div>
+                <button onclick="signIn()" class="w-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white py-3 rounded-lg font-semibold hover:from-purple-600 hover:to-indigo-600 transition duration-300">
+                    Sign In
+                </button>
+                <p class="text-center text-white/70">
+                    Don't have an account? 
+                    <span onclick="showSignUpForm()" class="text-purple-300 cursor-pointer hover:text-purple-200">Sign up</span>
+                </p>
+            </div>
+
+            <!-- Signup Form -->
+            <div id="signupForm" class="hidden space-y-6">
+                <div>
+                    <input type="text" id="signupName" placeholder="Full Name" 
+                           class="w-full px-4 py-3 rounded-lg glass-effect text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-400">
+                </div>
+                <div>
+                    <input type="email" id="signupEmail" placeholder="Email" 
+                           class="w-full px-4 py-3 rounded-lg glass-effect text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-400">
+                </div>
+                <div>
+                    <input type="password" id="signupPassword" placeholder="Password (min 6 characters)" 
+                           class="w-full px-4 py-3 rounded-lg glass-effect text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-400">
+                </div>
+                <div>
+                    <select id="signupLanguage" class="w-full px-4 py-3 rounded-lg glass-effect text-white focus:outline-none focus:ring-2 focus:ring-purple-400">
+                        <option value="en" class="text-gray-800">English</option>
+                        <option value="hi" class="text-gray-800">हिन्दी (Hindi)</option>
+                        <option value="es" class="text-gray-800">Español (Spanish)</option>
+                        <option value="fr" class="text-gray-800">Français (French)</option>
+                        <option value="de" class="text-gray-800">Deutsch (German)</option>
+                        <option value="zh" class="text-gray-800">中文 (Chinese)</option>
+                        <option value="ja" class="text-gray-800">日本語 (Japanese)</option>
+                        <option value="ar" class="text-gray-800">العربية (Arabic)</option>
+                    </select>
+                </div>
+                <button onclick="signUp()" class="w-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white py-3 rounded-lg font-semibold hover:from-purple-600 hover:to-indigo-600 transition duration-300">
+                    Create Account
+                </button>
+                <p class="text-center text-white/70">
+                    Already have an account? 
+                    <span onclick="showLoginForm()" class="text-purple-300 cursor-pointer hover:text-purple-200">Sign in</span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp" class="hidden flex h-screen">
+        <!-- Sidebar -->
+        <div class="w-80 glass-effect border-r border-white/20 flex flex-col">
+            <!-- Header -->
+            <div class="p-6 border-b border-white/20">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-2xl font-bold text-white">LinguaLink</h2>
+                    <div class="flex space-x-2">
+                        <button onclick="showInviteModal()" class="p-2 rounded-lg glass-effect text-white hover:bg-white/30 transition duration-300" title="Invite Friends">
+                            <i class="fas fa-user-plus"></i>
+                        </button>
+                        <button onclick="showSettings()" class="p-2 rounded-lg glass-effect text-white hover:bg-white/30 transition duration-300" title="Settings">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                        <button onclick="signOut()" class="p-2 rounded-lg glass-effect text-white hover:bg-white/30 transition duration-300" title="Sign Out">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- User Profile -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-12 h-12 bg-gradient-to-r from-purple-400 to-indigo-400 rounded-full flex items-center justify-center">
+                        <span id="userInitials" class="text-white font-bold text-lg"></span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p id="userName" class="text-white font-semibold truncate"></p>
+                        <p id="userLanguage" class="text-purple-200 text-sm"></p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-xs text-white/70">My Code:</p>
+                        <p id="userInviteCode" class="text-purple-300 font-mono text-sm font-bold cursor-pointer" onclick="copyInviteCode()" title="Click to copy"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <div class="flex border-b border-white/20">
+                <button onclick="showChats()" id="chatsTab" class="flex-1 py-3 px-4 text-white font-semibold bg-white/20">
+                    <i class="fas fa-comment mr-2"></i>Chats
+                </button>
+                <button onclick="showConnect()" id="connectTab" class="flex-1 py-3 px-4 text-white/70 font-semibold hover:bg-white/10">
+                    <i class="fas fa-link mr-2"></i>Connect
+                </button>
+            </div>
+
+            <!-- Content Area -->
+            <div class="flex-1 overflow-y-auto">
+                <!-- Chats List -->
+                <div id="chatsList" class="p-4 space-y-2">
+                    <div class="text-center py-8">
+                        <i class="fas fa-comments text-white/50 text-3xl mb-2"></i>
+                        <p class="text-white/70">No chats yet</p>
+                        <p class="text-white/50 text-sm">Share your code to start chatting!</p>
+                    </div>
+                </div>
+
+                <!-- Connect Section -->
+                <div id="connectSection" class="hidden p-4 space-y-4">
+                    <div class="glass-effect rounded-lg p-4">
+                        <h3 class="text-white font-semibold mb-3">Connect with Friends</h3>
+                        <div class="space-y-3">
+                            <input type="text" id="friendInviteCode" placeholder="Enter friend's invite code" 
+                                   class="w-full px-4 py-3 rounded-lg glass-effect text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-400">
+                            <button onclick="connectWithFriend()" class="w-full bg-gradient-to-r from-green-500 to-blue-500 text-white py-3 rounded-lg font-semibold hover:from-green-600 hover:to-blue-600 transition duration-300">
+                                <i class="fas fa-link mr-2"></i>Connect
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="glass-effect rounded-lg p-4">
+                        <h3 class="text-white font-semibold mb-3">My Invite Code</h3>
+                        <div class="flex items-center space-x-2">
+                            <input type="text" id="myInviteCodeDisplay" readonly 
+                                   class="flex-1 px-4 py-3 rounded-lg glass-effect text-white font-mono text-center">
+                            <button onclick="copyInviteCode()" class="px-4 py-3 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-lg hover:from-purple-600 hover:to-indigo-600 transition duration-300">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                        <p class="text-white/70 text-sm mt-2 text-center">Share this code with friends to start chatting</p>
+                    </div>
+
+                    <div id="onlineUsers" class="glass-effect rounded-lg p-4">
+                        <h3 class="text-white font-semibold mb-3">
+                            <span class="online-indicator inline-block w-2 h-2 bg-green-400 rounded-full mr-2"></span>
+                            Online Users
+                        </h3>
+                        <div id="onlineUsersList" class="space-y-2">
+                            <!-- Online users will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Area -->
+        <div class="flex-1 flex flex-col">
+            <!-- Chat Header -->
+            <div id="chatHeader" class="hidden glass-effect border-b border-white/20 p-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-r from-green-400 to-blue-400 rounded-full flex items-center justify-center">
+                        <span id="chatUserInitials" class="text-white font-bold"></span>
+                    </div>
+                    <div>
+                        <h3 id="chatUserName" class="text-white font-semibold"></h3>
+                        <p id="chatUserStatus" class="text-green-300 text-sm">
+                            <span class="online-indicator inline-block w-2 h-2 bg-green-400 rounded-full mr-1"></span>
+                            Online
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Welcome Screen -->
+            <div id="welcomeScreen" class="flex-1 flex items-center justify-center">
+                <div class="text-center">
+                    <div class="w-24 h-24 bg-gradient-to-r from-purple-400 to-indigo-400 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-language text-white text-3xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-white mb-2">Welcome to LinguaLink</h3>
+                    <p class="text-purple-200 mb-4">Connect with friends using invite codes and start chatting across languages</p>
+                    <div class="space-y-2">
+                        <p class="text-white/70">Your invite code: <span id="welcomeInviteCode" class="text-purple-300 font-mono font-bold"></span></p>
+                        <button onclick="showConnect()" class="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-6 py-2 rounded-lg hover:from-purple-600 hover:to-indigo-600 transition duration-300">
+                            <i class="fas fa-link mr-2"></i>Connect with Friends
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Messages Area -->
+            <div id="messagesArea" class="hidden flex-1 overflow-y-auto p-4 space-y-4">
+                <!-- Messages will be populated here -->
+            </div>
+
+            <!-- Message Input -->
+            <div id="messageInput" class="hidden glass-effect border-t border-white/20 p-4">
+                <div class="flex space-x-3">
+                    <input type="text" id="messageText" placeholder="Type your message..." 
+                           class="flex-1 px-4 py-3 rounded-lg glass-effect text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-400">
+                    <button onclick="sendMessage()" class="px-6 py-3 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-lg hover:from-purple-600 hover:to-indigo-600 transition duration-300">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invite Modal -->
+    <div id="inviteModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="glass-effect rounded-3xl p-8 w-full max-w-md mx-4">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-2xl font-bold text-white">Invite Friends</h3>
+                <button onclick="hideInviteModal()" class="text-white/70 hover:text-white">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-6">
+                <div class="text-center">
+                    <p class="text-white mb-4">Share your invite code with friends:</p>
+                    <div class="glass-effect rounded-lg p-4 mb-4">
+                        <p id="modalInviteCode" class="text-2xl font-mono font-bold text-purple-300 mb-2"></p>
+                        <button onclick="copyInviteCode()" class="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-4 py-2 rounded-lg hover:from-purple-600 hover:to-indigo-600 transition duration-300">
+                            <i class="fas fa-copy mr-2"></i>Copy Code
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="border-t border-white/20 pt-6">
+                    <p class="text-white mb-3">Or connect using a friend's code:</p>
+                    <div class="flex space-x-2">
+                        <input type="text" id="modalFriendCode" placeholder="Enter invite code" 
+                               class="flex-1 px-4 py-3 rounded-lg glass-effect text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-400">
+                        <button onclick="connectWithFriend()" class="px-4 py-3 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-lg hover:from-green-600 hover:to-blue-600 transition duration-300">
+                            <i class="fas fa-link"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="glass-effect rounded-3xl p-8 w-full max-w-md mx-4">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-2xl font-bold text-white">Settings</h3>
+                <button onclick="hideSettings()" class="text-white/70 hover:text-white">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-white font-semibold mb-2">Language Preference</label>
+                    <select id="settingsLanguage" class="w-full px-4 py-3 rounded-lg glass-effect text-white focus:outline-none focus:ring-2 focus:ring-purple-400">
+                        <option value="en" class="text-gray-800">English</option>
+                        <option value="hi" class="text-gray-800">हिन्दी (Hindi)</option>
+                        <option value="es" class="text-gray-800">Español (Spanish)</option>
+                        <option value="fr" class="text-gray-800">Français (French)</option>
+                        <option value="de" class="text-gray-800">Deutsch (German)</option>
+                        <option value="zh" class="text-gray-800">中文 (Chinese)</option>
+                        <option value="ja" class="text-gray-800">日本語 (Japanese)</option>
+                        <option value="ar" class="text-gray-800">العربية (Arabic)</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-white font-semibold mb-2">Display Name</label>
+                    <input type="text" id="settingsName" 
+                           class="w-full px-4 py-3 rounded-lg glass-effect text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-400">
+                </div>
+
+                <div class="flex space-x-3">
+                    <button onclick="saveSettings()" class="flex-1 bg-gradient-to-r from-purple-500 to-indigo-500 text-white py-3 rounded-lg font-semibold hover:from-purple-600 hover:to-indigo-600 transition duration-300">
+                        Save Changes
+                    </button>
+                    <button onclick="hideSettings()" class="flex-1 glass-effect text-white py-3 rounded-lg font-semibold hover:bg-white/30 transition duration-300">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="hidden fixed top-4 right-4 bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+        <div class="flex items-center space-x-2">
+            <i class="fas fa-check-circle"></i>
+            <span id="notificationText"></span>
+        </div>
+    </div>
+
+    <script>
+        // Mock database - Replace with actual database
+        let users = {};
+        let chats = {};
+        let messages = {};
+        let currentUser = null;
+        let currentChatId = null;
+        let currentChatUser = null;
+
+        // Language codes to names mapping
+        const languageNames = {
+            'en': 'English',
+            'hi': 'हिन्दी',
+            'es': 'Español',
+            'fr': 'Français',
+            'de': 'Deutsch',
+            'zh': '中文',
+            'ja': '日本語',
+            'ar': 'العربية'
+        };
+
+        // Initialize app
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('loadingScreen').classList.add('hidden');
+                showAuthScreen();
+            }, 1500);
+        });
+
+        // Generate unique invite code
+        function generateInviteCode() {
+            return Math.random().toString(36).substring(2, 8).toUpperCase();
+        }
+
+        // Auth functions
+        function showAuthScreen() {
+            document.getElementById('authScreen').classList.remove('hidden');
+            document.getElementById('mainApp').classList.add('hidden');
+        }
+
+        function showLoginForm() {
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('signupForm').classList.add('hidden');
+        }
+
+        function showSignUpForm() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('signupForm').classList.remove('hidden');
+        }
+
+        function signIn() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!email || !password) {
+                showNotification('Please fill in all fields', 'error');
+                return;
+            }
+
+            // Find user in mock database
+            const user = Object.values(users).find(u => u.email === email && u.password === password);
+            
+            if (!user) {
+                showNotification('Invalid email or password', 'error');
+                return;
+            }
+
+            currentUser = user;
+            user.isOnline = true;
+            user.lastSeen = new Date();
+            
+            initializeApp();
+            showNotification('Welcome back!');
+        }
+
+        function signUp() {
+            const name = document.getElementById('signupName').value.trim();
+            const email = document.getElementById('signupEmail').value.trim();
+            const password = document.getElementById('signupPassword').value;
+            const language = document.getElementById('signupLanguage').value;
+            
+            if (!name || !email || !password) {
+                showNotification('Please fill in all fields', 'error');
+                return;
+            }
+
+            if (password.length < 6) {
+                showNotification('Password must be at least 6 characters', 'error');
+                return;
+            }
+
+            // Check if email already exists
+            const existingUser = Object.values(users).find(u => u.email === email);
+            if (existingUser) {
+                showNotification('Email already registered', 'error');
+                return;
+            }
+
+            // Create new user
+            const userId = 'user_' + Date.now();
+            const inviteCode = generateInviteCode();
+            
+            const newUser = {
+                id: userId,
+                name: name,
+                email: email,
+                password: password,
+                language: language,
+                inviteCode: inviteCode,
+                createdAt: new Date(),
+                lastSeen: new Date(),
+                isOnline: true,
+                friends: []
+            };
+
+            users[userId] = newUser;
+            currentUser = newUser;
+            
+            initializeApp();
+            showNotification('Account created successfully!');
+        }
+
+        function signOut() {
+            if (currentUser) {
+                currentUser.isOnline = false;
+                currentUser.lastSeen = new Date();
+            }
+            
+            currentUser = null;
+            currentChatId = null;
+            currentChatUser = null;
+            
+            showAuthScreen();
+            showNotification('Signed out successfully');
+        }
+
+        // App initialization
+        function initializeApp() {
+            document.getElementById('authScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            
+            // Update UI with user info
+            document.getElementById('userName').textContent = currentUser.name;
+            document.getElementById('userInitials').textContent = getInitials(currentUser.name);
+            document.getElementById('userLanguage').textContent = languageNames[currentUser.language];
+            document.getElementById('userInviteCode').textContent = currentUser.inviteCode;
+            document.getElementById('myInviteCodeDisplay').value = currentUser.inviteCode;
+            document.getElementById('modalInviteCode').textContent = currentUser.inviteCode;
+            document.getElementById('welcomeInviteCode').textContent = currentUser.inviteCode;
+            
+            // Load user's chats
+            loadChats();
+            
+            // Load online users
+            loadOnlineUsers();
+            
+            // Setup message input
+            setupMessageInput();
+        }
+
+        // Navigation functions
+        function showChats() {
+            document.getElementById('chatsTab').classList.add('bg-white/20');
+            document.getElementById('chatsTab').classList.remove('text-white/70');
+            document.getElementById('connectTab').classList.remove('bg-white/20');
+            document.getElementById('connectTab').classList.add('text-white/70');
+            
+            document.getElementById('chatsList').classList.remove('hidden');
+            document.getElementById('connectSection').classList.add('hidden');
+        }
+
+        function showConnect() {
+            document.getElementById('connectTab').classList.add('bg-white/20');
+            document.getElementById('connectTab').classList.remove('text-white/70');
+            document.getElementById('chatsTab').classList.remove('bg-white/20');
+            document.getElementById('chatsTab').classList.add('text-white/70');
+            
+            document.getElementById('connectSection').classList.remove('hidden');
+            document.getElementById('chatsList').classList.add('hidden');
+            
+            loadOnlineUsers();
+        }
+
+        // Connect with friends
+        function connectWithFriend() {
+            const inviteCode = (document.getElementById('friendInviteCode').value || 
+                              document.getElementById('modalFriendCode').value).trim().toUpperCase();
+            
+            if (!inviteCode) {
+                showNotification('Please enter an invite code', 'error');
+                return;
+            }
+
+            if (inviteCode === currentUser.inviteCode) {
+                showNotification('You cannot connect to yourself', 'error');
+                return;
+            }
+
+            // Find user by invite code
+            const friend = Object.values(users).find(u => u.inviteCode === inviteCode);
+            
+            if (!friend) {
+                showNotification('Invalid invite code', 'error');
+                return;
+            }
+
+            // Check if already friends
+            if (currentUser.friends.includes(friend.id)) {
+                showNotification('Already connected to this user', 'error');
+                return;
+            }
+
+            // Add to friends list
+            currentUser.friends.push(friend.id);
+            friend.friends.push(currentUser.id);
+
+            // Create or find existing chat
+            const chatId = createChat(friend);
+            
+            // Clear input
+            document.getElementById('friendInviteCode').value = '';
+            document.getElementById('modalFriendCode').value = '';
+            
+            // Hide invite modal if open
+            hideInviteModal();
+            
+            // Switch to chats and open the new chat
+            showChats();
+            loadChats();
+            
+            showNotification(`Connected with ${friend.name}!`);
+        }
+
+        function createChat(friend) {
+            // Check if chat already exists
+            const existingChatId = Object.keys(chats).find(chatId => {
+                const chat = chats[chatId];
+                return chat.participants.includes(currentUser.id) && chat.participants.includes(friend.id);
+            });
+
+            if (existingChatId) {
+                return existingChatId;
+            }
+
+            // Create new chat
+            const chatId = 'chat_' + Date.now();
+            chats[chatId] = {
+                id: chatId,
+                participants: [currentUser.id, friend.id],
+                createdAt: new Date(),
+                lastMessage: '',
+                lastMessageTime: new Date(),
+                messages: []
+            };
+
+            messages[chatId] = [];
+            return chatId;
+        }
+
+        // Load chats
+        function loadChats() {
+            const chatsList = document.getElementById('chatsList');
+            const userChats = Object.values(chats).filter(chat => 
+                chat.participants.includes(currentUser.id)
+            );
+
+            if (userChats.length === 0) {
+                chatsList.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-comments text-white/50 text-3xl mb-2"></i>
+                        <p class="text-white/70">No chats yet</p>
+                        <p class="text-white/50 text-sm">Share your code to start chatting!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Sort chats by last message time
+            userChats.sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
+
+            chatsList.innerHTML = userChats.map(chat => {
+                const friendId = chat.participants.find(id => id !== currentUser.id);
+                const friend = users[friendId];
+                const lastMessage = chat.lastMessage || 'No messages yet';
+                const isOnline = friend?.isOnline;
+                
+                return `
+                    <div onclick="openChat('${chat.id}')" class="glass-effect rounded-lg p-3 cursor-pointer hover:bg-white/20 transition duration-300">
+                        <div class="flex items-center space-x-3">
+                            <div class="relative">
+                                <div class="w-12 h-12 bg-gradient-to-r from-green-400 to-blue-400 rounded-full flex items-center justify-center">
+                                    <span class="text-white font-bold">${getInitials(friend?.name || 'Unknown')}</span>
+                                </div>
+                                ${isOnline ? '<div class="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 border-2 border-white rounded-full"></div>' : ''}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between">
+                                    <h4 class="text-white font-semibold truncate">${friend?.name || 'Unknown User'}</h4>
+                                    <span class="text-white/50 text-xs">${formatTime(chat.lastMessageTime)}</span>
+                                </div>
+                                <p class="text-white/70 text-sm truncate">${lastMessage}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Open chat
+        function openChat(chatId) {
+            currentChatId = chatId;
+            const chat = chats[chatId];
+            const friendId = chat.participants.find(id => id !== currentUser.id);
+            currentChatUser = users[friendId];
+
+            // Update chat header
+            document.getElementById('chatUserName').textContent = currentChatUser.name;
+            document.getElementById('chatUserInitials').textContent = getInitials(currentChatUser.name);
+            document.getElementById('chatUserStatus').innerHTML = currentChatUser.isOnline ? 
+                '<span class="online-indicator inline-block w-2 h-2 bg-green-400 rounded-full mr-1"></span>Online' :
+                `Last seen ${formatTime(currentChatUser.lastSeen)}`;
+
+            // Show chat interface
+            document.getElementById('welcomeScreen').classList.add('hidden');
+            document.getElementById('chatHeader').classList.remove('hidden');
+            document.getElementById('messagesArea').classList.remove('hidden');
+            document.getElementById('messageInput').classList.remove('hidden');
+
+            // Load messages
+            loadMessages(chatId);
+        }
+
+        // Load messages
+        function loadMessages(chatId) {
+            const messagesArea = document.getElementById('messagesArea');
+            const chatMessages = messages[chatId] || [];
+
+            if (chatMessages.length === 0) {
+                messagesArea.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-comment text-white/50 text-3xl mb-2"></i>
+                        <p class="text-white/70">Start your conversation!</p>
+                        <p class="text-white/50 text-sm">Messages will be automatically translated</p>
+                    </div>
+                `;
+                return;
+            }
+
+            messagesArea.innerHTML = chatMessages.map(message => {
+                const isOwnMessage = message.senderId === currentUser.id;
+                const sender = users[message.senderId];
+                
+                return `
+                    <div class="chat-bubble flex ${isOwnMessage ? 'justify-end' : 'justify-start'}">
+                        <div class="max-w-xs lg:max-w-md ${isOwnMessage ? 'bg-gradient-to-r from-purple-500 to-indigo-500' : 'glass-effect'} rounded-2xl px-4 py-2">
+                            <div class="flex items-center space-x-2 mb-1">
+                                <span class="text-white/90 text-sm font-medium">${sender?.name || 'Unknown'}</span>
+                                <span class="text-white/60 text-xs">${formatTime(message.timestamp)}</span>
+                            </div>
+                            <p class="text-white">${message.text}</p>
+                            ${message.translatedText && message.translatedText !== message.text ? 
+                                `<p class="text-white/80 text-sm mt-1 italic border-t border-white/20 pt-1">📍 ${message.translatedText}</p>` : 
+                                ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Scroll to bottom
+            messagesArea.scrollTop = messagesArea.scrollHeight;
+        }
+
+        // Send message
+        function sendMessage() {
+            const messageText = document.getElementById('messageText').value.trim();
+            
+            if (!messageText || !currentChatId) return;
+
+            const messageId = 'msg_' + Date.now();
+            const message = {
+                id: messageId,
+                chatId: currentChatId,
+                senderId: currentUser.id,
+                text: messageText,
+                translatedText: translateMessage(messageText, currentUser.language, currentChatUser.language),
+                timestamp: new Date(),
+                isRead: false
+            };
+
+            // Add message to chat
+            if (!messages[currentChatId]) {
+                messages[currentChatId] = [];
+            }
+            messages[currentChatId].push(message);
+
+            // Update chat's last message
+            chats[currentChatId].lastMessage = messageText;
+            chats[currentChatId].lastMessageTime = new Date();
+
+            // Clear input
+            document.getElementById('messageText').value = '';
+
+            // Reload messages and chats
+            loadMessages(currentChatId);
+            loadChats();
+        }
+
+        // Mock translation function
+        function translateMessage(text, fromLang, toLang) {
+            if (fromLang === toLang) return text;
+            
+            // Mock translations for demo
+            const translations = {
+                'hello': { 'hi': 'नमस्ते', 'es': 'hola', 'fr': 'bonjour', 'de': 'hallo', 'zh': '你好', 'ja': 'こんにちは', 'ar': 'مرحبا' },
+                'how are you': { 'hi': 'आप कैसे हैं', 'es': '¿cómo estás?', 'fr': 'comment allez-vous', 'de': 'wie geht es dir', 'zh': '你好吗', 'ja': '元気ですか', 'ar': 'كيف حالك' },
+                'good morning': { 'hi': 'शुभ प्रात', 'es': 'buenos días', 'fr': 'bonjour', 'de': 'guten morgen', 'zh': '早上好', 'ja': 'おはよう', 'ar': 'صباح الخير' },
+                'thank you': { 'hi': 'धन्यवाद', 'es': 'gracias', 'fr': 'merci', 'de': 'danke', 'zh': '谢谢', 'ja': 'ありがとう', 'ar': 'شكرا' }
+            };
+
+            const lowerText = text.toLowerCase();
+            if (translations[lowerText] && translations[lowerText][toLang]) {
+                return translations[lowerText][toLang];
+            }
+
+            return `[Translated to ${languageNames[toLang]}] ${text}`;
+        }
+
+        // Load online users
+        function loadOnlineUsers() {
+            const onlineUsersList = document.getElementById('onlineUsersList');
+            const onlineUsers = Object.values(users).filter(user => 
+                user.isOnline && user.id !== currentUser.id
+            );
+
+            if (onlineUsers.length === 0) {
+                onlineUsersList.innerHTML = `
+                    <div class="text-center py-4">
+                        <p class="text-white/70">No users online</p>
+                    </div>
+                `;
+                return;
+            }
+
+            onlineUsersList.innerHTML = onlineUsers.map(user => `
+                <div class="flex items-center space-x-3 p-2 rounded-lg hover:bg-white/10 transition duration-300">
+                    <div class="relative">
+                        <div class="w-10 h-10 bg-gradient-to-r from-green-400 to-blue-400 rounded-full flex items-center justify-center">
+                            <span class="text-white font-bold text-sm">${getInitials(user.name)}</span>
+                        </div>
+                        <div class="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 border-2 border-white rounded-full"></div>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-white font-semibold text-sm">${user.name}</p>
+                        <p class="text-white/70 text-xs">${languageNames[user.language]}</p>
+                    </div>
+                    ${currentUser.friends.includes(user.id) ? 
+                        '<i class="fas fa-check text-green-400"></i>' : 
+                        `<button onclick="quickConnect('${user.inviteCode}')" class="text-purple-300 hover:text-purple-200 text-xs">
+                            <i class="fas fa-plus"></i>
+                        </button>`
+                    }
+                </div>
+            `).join('');
+        }
+
+        // Quick connect function
+        function quickConnect(inviteCode) {
+            document.getElementById('friendInviteCode').value = inviteCode;
+            connectWithFriend();
+        }
+
+        // Setup message input
+        function setupMessageInput() {
+            const messageInput = document.getElementById('messageText');
+            messageInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+        }
+
+        // Modal functions
+        function showInviteModal() {
+            document.getElementById('inviteModal').classList.remove('hidden');
+        }
+
+        function hideInviteModal() {
+            document.getElementById('inviteModal').classList.add('hidden');
+        }
+
+        function showSettings() {
+            document.getElementById('settingsLanguage').value = currentUser.language;
+            document.getElementById('settingsName').value = currentUser.name;
+            document.getElementById('settingsModal').classList.remove('hidden');
+        }
+
+        function hideSettings() {
+            document.getElementById('settingsModal').classList.add('hidden');
+        }
+
+        function saveSettings() {
+            const newLanguage = document.getElementById('settingsLanguage').value;
+            const newName = document.getElementById('settingsName').value.trim();
+
+            if (!newName) {
+                showNotification('Please enter a valid name', 'error');
+                return;
+            }
+
+            currentUser.language = newLanguage;
+            currentUser.name = newName;
+
+            // Update UI
+            document.getElementById('userName').textContent = newName;
+            document.getElementById('userInitials').textContent = getInitials(newName);
+            document.getElementById('userLanguage').textContent = languageNames[newLanguage];
+
+            hideSettings();
+            showNotification('Settings saved successfully!');
+        }
+
+        // Utility functions
+        function getInitials(name) {
+            return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+        }
+
+        function formatTime(date) {
+            const now = new Date();
+            const messageDate = new Date(date);
+            const diffMs = now - messageDate;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+
+            if (diffMins < 1) return 'now';
+            if (diffMins < 60) return `${diffMins}m`;
+            if (diffHours < 24) return `${diffHours}h`;
+            if (diffDays < 7) return `${diffDays}d`;
+            return messageDate.toLocaleDateString();
+        }
+
+        function copyInviteCode() {
+            navigator.clipboard.writeText(currentUser.inviteCode).then(() => {
+                showNotification('Invite code copied!');
+            }).catch(() => {
+                showNotification('Failed to copy code', 'error');
+            });
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            const notificationText = document.getElementById('notificationText');
+            
+            notificationText.textContent = message;
+            
+            if (type === 'error') {
+                notification.className = notification.className.replace('from-purple-500 to-indigo-500', 'from-red-500 to-red-600');
+            } else {
+                notification.className = notification.className.replace('from-red-500 to-red-600', 'from-purple-500 to-indigo-500');
+            }
+            
+            notification.classList.remove('hidden');
+            
+            setTimeout(() => {
+                notification.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Demo data - Add some sample users for testing
+        function addDemoUsers() {
+            const demoUsers = [
+                { name: 'Alice Johnson', email: 'alice@demo.com', language: 'en', inviteCode: 'ALICE1' },
+                { name: 'Carlos García', email: 'carlos@demo.com', language: 'es', inviteCode: 'CARLOS' },
+                { name: 'Marie Dubois', email: 'marie@demo.com', language: 'fr', inviteCode: 'MARIE2' },
+                { name: 'Hans Mueller', email: 'hans@demo.com', language: 'de', inviteCode: 'HANS01' },
+                { name: 'Priya Sharma', email: 'priya@demo.com', language: 'hi', inviteCode: 'PRIYA5' }
+            ];
+
+            demoUsers.forEach((userData, index) => {
+                const userId = 'demo_user_' + index;
+                users[userId] = {
+                    id: userId,
+                    name: userData.name,
+                    email: userData.email,
+                    password: 'demo123',
+                    language: userData.language,
+                    inviteCode: userData.inviteCode,
+                    createdAt: new Date(),
+                    lastSeen: new Date(),
+                    isOnline: Math.random() > 0.5,
+                    friends: []
+                };
+            });
+        }
+
+        // Initialize demo data on load
+        addDemoUsers();
+    </script>
+</body>
+</html>
